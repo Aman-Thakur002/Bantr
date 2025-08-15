@@ -1,0 +1,1753 @@
+{
+	"info": {
+		"_postman_id": "bantr-complete-api-collection",
+		"name": "Bantr Chat API - Complete",
+		"description": "Complete API collection for Bantr chat application with all endpoints including authentication, users, conversations, messages, attachments, calls, AI, and games",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "bantr-api"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "conversation_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "message_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health & Info",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "API Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.user) {",
+									"        pm.collectionVariables.set('user_id', response.data.user._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data) {",
+									"        pm.collectionVariables.set('access_token', response.data.accessToken);",
+									"        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+									"        pm.collectionVariables.set('user_id', response.data.user._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Send Magic Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/magic-link",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "magic-link"]
+						}
+					}
+				},
+				{
+					"name": "Verify Magic Link",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/magic-link/verify?token=MAGIC_LINK_TOKEN",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "magic-link", "verify"],
+							"query": [
+								{
+									"key": "token",
+									"value": "MAGIC_LINK_TOKEN"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Send OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"type\": \"email_verification\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/otp/send",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "otp", "send"]
+						}
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"otp\": \"123456\",\n  \"type\": \"email_verification\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/otp/verify",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "otp", "verify"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.accessToken) {",
+									"        pm.collectionVariables.set('access_token', response.data.accessToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "Google OAuth",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/google",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "google"]
+						}
+					}
+				},
+				{
+					"name": "GitHub OAuth",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/github",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "github"]
+						}
+					}
+				},
+				{
+					"name": "Reset Password Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/reset-password",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "reset-password"]
+						}
+					}
+				},
+				{
+					"name": "Reset Password Confirm",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"RESET_TOKEN\",\n  \"password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/reset-password/confirm",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "reset-password", "confirm"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"phone\": \"+1234567890\",\n  \"bio\": \"Updated bio\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Upload Avatar",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/users/avatar",
+							"host": ["{{base_url}}"],
+							"path": ["users", "avatar"]
+						}
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/search?q=test&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["users", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "test"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["users", "{{user_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Add Contact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"USER_ID_TO_ADD\",\n  \"nickname\": \"Friend Name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/contacts",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts"]
+						}
+					}
+				},
+				{
+					"name": "Get Contacts",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/contacts?page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Contact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nickname\": \"Updated Nickname\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/contacts/CONTACT_USER_ID",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts", "CONTACT_USER_ID"]
+						}
+					}
+				},
+				{
+					"name": "Delete Contact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/users/contacts/CONTACT_USER_ID",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts", "CONTACT_USER_ID"]
+						}
+					}
+				},
+				{
+					"name": "Block Contact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{base_url}}/users/contacts/CONTACT_USER_ID/block",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts", "CONTACT_USER_ID", "block"]
+						}
+					}
+				},
+				{
+					"name": "Unblock Contact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{base_url}}/users/contacts/CONTACT_USER_ID/unblock",
+							"host": ["{{base_url}}"],
+							"path": ["users", "contacts", "CONTACT_USER_ID", "unblock"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Conversations",
+			"item": [
+				{
+					"name": "Create Conversation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data._id) {",
+									"        pm.collectionVariables.set('conversation_id', response.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"participants\": [\"USER_ID_1\", \"USER_ID_2\"],\n  \"type\": \"private\",\n  \"name\": \"Chat Name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/conversations",
+							"host": ["{{base_url}}"],
+							"path": ["conversations"]
+						}
+					}
+				},
+				{
+					"name": "Get Conversations",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/conversations?page=1&limit=20&type=private",
+							"host": ["{{base_url}}"],
+							"path": ["conversations"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "type",
+									"value": "private"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Conversation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Conversation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Chat Name\",\n  \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Add Participant",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"USER_ID_TO_ADD\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}/participants",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}", "participants"]
+						}
+					}
+				},
+				{
+					"name": "Remove Participant",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}/participants/USER_ID_TO_REMOVE",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}", "participants", "USER_ID_TO_REMOVE"]
+						}
+					}
+				},
+				{
+					"name": "Leave Conversation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}/leave",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}", "leave"]
+						}
+					}
+				},
+				{
+					"name": "Delete Conversation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/conversations/{{conversation_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["conversations", "{{conversation_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Send Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data._id) {",
+									"        pm.collectionVariables.set('message_id', response.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversation_id}}\",\n  \"content\": \"Hello, this is a test message!\",\n  \"type\": \"text\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/messages",
+							"host": ["{{base_url}}"],
+							"path": ["messages"]
+						}
+					}
+				},
+				{
+					"name": "Get Messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/messages?conversationId={{conversation_id}}&page=1&limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "conversationId",
+									"value": "{{conversation_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/messages/{{message_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "{{message_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Updated message content\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/messages/{{message_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "{{message_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/messages/{{message_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "{{message_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{base_url}}/messages/{{message_id}}/read",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "{{message_id}}", "read"]
+						}
+					}
+				},
+				{
+					"name": "React to Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emoji\": \"👍\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/messages/{{message_id}}/react",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "{{message_id}}", "react"]
+						}
+					}
+				},
+				{
+					"name": "Search Messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/messages/search?q=hello&conversationId={{conversation_id}}&page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["messages", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "hello"
+								},
+								{
+									"key": "conversationId",
+									"value": "{{conversation_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Attachments",
+			"item": [
+				{
+					"name": "Upload File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "type",
+									"value": "image",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/attachments/upload",
+							"host": ["{{base_url}}"],
+							"path": ["attachments", "upload"]
+						}
+					}
+				},
+				{
+					"name": "Get Attachment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/attachments/ATTACHMENT_ID",
+							"host": ["{{base_url}}"],
+							"path": ["attachments", "ATTACHMENT_ID"]
+						}
+					}
+				},
+				{
+					"name": "Delete Attachment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/attachments/ATTACHMENT_ID",
+							"host": ["{{base_url}}"],
+							"path": ["attachments", "ATTACHMENT_ID"]
+						}
+					}
+				},
+				{
+					"name": "Get User Attachments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/attachments?type=image&page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["attachments"],
+							"query": [
+								{
+									"key": "type",
+									"value": "image"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Calls",
+			"item": [
+				{
+					"name": "Initiate Call",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversation_id}}\",\n  \"type\": \"video\",\n  \"participants\": [\"USER_ID_1\", \"USER_ID_2\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["calls"]
+						}
+					}
+				},
+				{
+					"name": "Get Call",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/calls/CALL_ID",
+							"host": ["{{base_url}}"],
+							"path": ["calls", "CALL_ID"]
+						}
+					}
+				},
+				{
+					"name": "Join Call",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/calls/CALL_ID/join",
+							"host": ["{{base_url}}"],
+							"path": ["calls", "CALL_ID", "join"]
+						}
+					}
+				},
+				{
+					"name": "End Call",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/calls/CALL_ID/end",
+							"host": ["{{base_url}}"],
+							"path": ["calls", "CALL_ID", "end"]
+						}
+					}
+				},
+				{
+					"name": "Get Call History",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/calls?page=1&limit=20&type=video",
+							"host": ["{{base_url}}"],
+							"path": ["calls"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "type",
+									"value": "video"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "AI Features",
+			"item": [
+				{
+					"name": "Chat with AI",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Hello AI, how are you?\",\n  \"conversationId\": \"{{conversation_id}}\",\n  \"provider\": \"openai\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai/chat",
+							"host": ["{{base_url}}"],
+							"path": ["ai", "chat"]
+						}
+					}
+				},
+				{
+					"name": "Generate Image",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"prompt\": \"A beautiful sunset over mountains\",\n  \"size\": \"1024x1024\",\n  \"provider\": \"openai\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai/image/generate",
+							"host": ["{{base_url}}"],
+							"path": ["ai", "image", "generate"]
+						}
+					}
+				},
+				{
+					"name": "Analyze Image",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "prompt",
+									"value": "What do you see in this image?",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/ai/image/analyze",
+							"host": ["{{base_url}}"],
+							"path": ["ai", "image", "analyze"]
+						}
+					}
+				},
+				{
+					"name": "Translate Text",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Hello, how are you?\",\n  \"from\": \"en\",\n  \"to\": \"es\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai/translate",
+							"host": ["{{base_url}}"],
+							"path": ["ai", "translate"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Games",
+			"item": [
+				{
+					"name": "Start Tic Tac Toe",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversation_id}}\",\n  \"opponent\": \"USER_ID\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games/tictactoe/start",
+							"host": ["{{base_url}}"],
+							"path": ["games", "tictactoe", "start"]
+						}
+					}
+				},
+				{
+					"name": "Make Move",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"gameId\": \"GAME_ID\",\n  \"position\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games/tictactoe/move",
+							"host": ["{{base_url}}"],
+							"path": ["games", "tictactoe", "move"]
+						}
+					}
+				},
+				{
+					"name": "Get Game State",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/games/tictactoe/GAME_ID",
+							"host": ["{{base_url}}"],
+							"path": ["games", "tictactoe", "GAME_ID"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/users?page=1&limit=20&status=active&role=user",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "role",
+									"value": "user"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User Status (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"suspended\",\n  \"reason\": \"Violation of terms\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/USER_ID/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "USER_ID", "status"]
+						}
+					}
+				},
+				{
+					"name": "Update User Role (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"moderator\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/USER_ID/role",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "USER_ID", "role"]
+						}
+					}
+				},
+				{
+					"name": "Get System Stats (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "stats"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

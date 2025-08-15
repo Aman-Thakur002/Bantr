@@ -1,43 +1,51 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { cn } from '../../lib/utils';
+import useThemeStore from '../../stores/useThemeStore';
 
-const Input = ({ id, label, type = 'text', ...props }) => {
-  const primaryColor = 'var(--color-primary)';
-  const textColor = 'var(--color-text)';
-  const bgColor = 'var(--color-background)';
+const Input = React.forwardRef(({
+  className,
+  type = 'text',
+  error,
+  label,
+  ...props
+}, ref) => {
+  const { glassMorphism } = useThemeStore();
+  
+  const baseClasses = 'w-full px-3 py-2 text-sm transition-all duration-200 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50';
+  
+  const glassClasses = glassMorphism
+    ? 'bg-white/10 border-white/20 backdrop-blur-md text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400'
+    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white';
+  
+  const errorClasses = error 
+    ? 'border-red-500 focus:ring-red-500/20' 
+    : 'focus:border-primary';
 
   return (
-    <div className="relative w-full">
-      <motion.input
-        id={id}
+    <div className="space-y-1">
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {label}
+        </label>
+      )}
+      <input
         type={type}
+        className={cn(
+          baseClasses,
+          glassClasses,
+          errorClasses,
+          className
+        )}
+        ref={ref}
         {...props}
-        className="w-full px-4 py-3 bg-transparent border-2 rounded-lg peer focus:outline-none"
-        style={{
-          borderColor: 'rgba(var(--color-text-rgb), 0.2)',
-          color: textColor,
-        }}
-        whileFocus={{
-          borderColor: primaryColor,
-          boxShadow: `0 0 0 2px ${primaryColor}40`, // 25% opacity
-        }}
-        placeholder=" " // Required for the label animation to work
       />
-      <label
-        htmlFor={id}
-        className="absolute left-4 transition-all duration-300 pointer-events-none
-                   peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base
-                   peer-focus:-top-2.5 peer-focus:text-sm
-                   -top-2.5 text-sm"
-        style={{
-          color: 'rgba(var(--color-text-rgb), 0.5)',
-          backgroundColor: bgColor
-        }}
-      >
-        {label}
-      </label>
+      {error && (
+        <p className="text-sm text-red-500">{error}</p>
+      )}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';
 
 export default Input;
