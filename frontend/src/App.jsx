@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import { useTheme } from './hooks/useTheme';
+import ThemeSwitcher from './components/ui/ThemeSwitcher';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { theme } = useTheme();
+  const { user, logout } = useAuth();
+
+  const bgColor = 'var(--color-background)';
+  const textColor = 'var(--color-text)';
+  const primaryColor = 'var(--color-primary)';
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div style={{ backgroundColor: bgColor, color: textColor, minHeight: '100vh' }} className="flex flex-col items-center justify-center transition-colors duration-500">
+
+        <div className="absolute top-4 right-4">
+          <ThemeSwitcher />
+        </div>
+
+        {user ? (
+          <div>
+            <h1 className="text-3xl">Welcome, {user.name}</h1>
+            <button onClick={logout} style={{ color: primaryColor }}>Logout</button>
+          </div>
+        ) : (
+          <>
+            <nav className="mb-8">
+              <ul className="flex gap-4">
+                <li><Link to="/login" style={{ color: primaryColor }} className="hover:underline">Login</Link></li>
+                <li><Link to="/signup" style={{ color: primaryColor }} className="hover:underline">Signup</Link></li>
+              </ul>
+            </nav>
+            <main>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/" element={<LoginPage />} /> {/* Default route */}
+              </Routes>
+            </main>
+          </>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
