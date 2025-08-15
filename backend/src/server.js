@@ -7,7 +7,10 @@ import { logger } from './config/logger.js';
 import { initializeSocket } from './sockets/io.js';
 import { createGracefulShutdown } from './utils/gracefulShutdown.js';
 
+// Create an HTTP server from the Express app
 const server = http.createServer(app);
+
+// Initialize Socket.IO with CORS configuration
 const io = new Server(server, {
   cors: {
     origin: config.clientUrl,
@@ -15,7 +18,7 @@ const io = new Server(server, {
   }
 });
 
-// Track active connections for graceful shutdown
+// Keep track of active connections for a graceful shutdown
 const connections = new Set();
 server.on('connection', (connection) => {
   connections.add(connection);
@@ -24,25 +27,30 @@ server.on('connection', (connection) => {
   });
 });
 
-// Setup Socket.IO
-const socketIO = initializeSocket(server);
+// Initialize Socket.IO event handlers
+const socketIO = initializeSocket(io);
 
-// Setup graceful shutdown
+// Set up graceful shutdown to properly close server and database connections
 createGracefulShutdown(server, io, connections);
 
-// Connect to database and start server
+/**
+ * Connects to the MongoDB database and starts the HTTP server.
+ */
 const startServer = async () => {
   try {
+    // Establish connection to MongoDB
     await mongoose.connect(config.mongoUri);
-   console.log('Connected to MongoDB');
+    logger.info('Successfully connected to MongoDB');
 
+    // Start listening for incoming requests
     server.listen(config.port, () => {
-     console.log(`Server running on port ${config.port}`);
+      logger.info(`Server running on port ${config.port}`);
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error('Failed to connect to MongoDB or start server:', error);
     process.exit(1);
   }
 };
 
+// Start the server
 startServer();
