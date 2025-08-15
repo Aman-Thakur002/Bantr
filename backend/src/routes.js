@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { success } from './utils/response.js';
 
-// Import module routes
+// Import all module-specific routers
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/user.routes.js';
 import conversationRoutes from './modules/conversations/conversation.routes.js';
@@ -12,7 +12,12 @@ import aiRoutes from './modules/ai/ai.routes.js';
 
 const router = Router();
 
-// Health check endpoint
+/**
+ * @desc    Health check endpoint
+ * @route   GET /api/v1/health
+ * @access  Public
+ * @returns {object} 200 - An object with server status, timestamp, uptime, and memory usage
+ */
 router.get('/health', (req, res) => {
   res.json(success({
     status: 'healthy',
@@ -22,7 +27,12 @@ router.get('/health', (req, res) => {
   }));
 });
 
-// API version info
+/**
+ * @desc    API version and general info
+ * @route   GET /api/v1/
+ * @access  Public
+ * @returns {object} 200 - An object with API name, version, and description
+ */
 router.get('/', (req, res) => {
   res.json(success({
     name: 'NeuroChat API',
@@ -41,7 +51,7 @@ router.get('/', (req, res) => {
   }));
 });
 
-// Mount module routes
+// Mount all module routers to their respective paths
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/conversations', conversationRoutes);
