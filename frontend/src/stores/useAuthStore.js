@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiClient } from '../lib/api';
-import { socketManager } from '../lib/socket';
+import { authAPI, setTokens, clearTokens } from '../lib/api';
+import { connectSocket, disconnectSocket } from '../lib/socket';
 
 const useAuthStore = create(
   persist(
@@ -19,15 +19,16 @@ const useAuthStore = create(
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
 
-      login: async (email, password) => {
+      login: async (identifier, password) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await apiClient.login(email, password);
+          const response = await authAPI.login(identifier, password);
           
-          const { user, accessToken, refreshToken } = response.data;
+          const { user, tokens } = response.data;
+          const { accessToken, refreshToken } = tokens;
           
-          apiClient.setAccessToken(accessToken);
-          socketManager.connect(accessToken);
+          setTokens(accessToken, refreshToken);
+          // connectSocket(accessToken); // Temporarily disabled
           
           set({
             user,
@@ -47,27 +48,22 @@ const useAuthStore = create(
       register: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await apiClient.register(userData);
+          const response = await authAPI.register(userData);
           
-          if (response.data.user) {
-            // Auto-login after registration if tokens are provided
-            if (response.data.accessToken) {
-              const { user, accessToken, refreshToken } = response.data;
-              
-              apiClient.setAccessToken(accessToken);
-              socketManager.connect(accessToken);
-              
-              set({
-                user,
-                accessToken,
-                refreshToken,
-                isAuthenticated: true,
-                isLoading: false,
-              });
-            } else {
-              set({ isLoading: false });
-            }
-          }
+          // Auto-login after registration since backend returns tokens
+          const { user, tokens } = response.data;
+          const { accessToken, refreshToken } = tokens;
+          
+          setTokens(accessToken, refreshToken);
+          // connectSocket(accessToken); // Temporarily disabled
+          
+          set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+          });
           
           return response;
         } catch (error) {
@@ -80,13 +76,13 @@ const useAuthStore = create(
         try {
           const { accessToken } = get();
           if (accessToken) {
-            await apiClient.logout();
+            await authAPI.logout();
           }
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          apiClient.setAccessToken(null);
-          socketManager.disconnect();
+          clearTokens();
+          disconnectSocket();
           set({
             user: null,
             accessToken: null,
@@ -102,10 +98,11 @@ const useAuthStore = create(
           const { refreshToken } = get();
           if (!refreshToken) throw new Error('No refresh token');
           
-          const response = await apiClient.refreshToken(refreshToken);
-          const { accessToken: newAccessToken } = response.data;
+          const response = await authAPI.refreshToken(refreshToken);
+          const { tokens } = response.data;
+          const { accessToken: newAccessToken } = tokens;
           
-          apiClient.setAccessToken(newAccessToken);
+          setTokens(newAccessToken, refreshToken);
           set({ accessToken: newAccessToken });
           
           return response;
@@ -119,7 +116,7 @@ const useAuthStore = create(
       updateProfile: async (profileData) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await apiClient.updateProfile(profileData);
+          const response = await userAPI.updateProfile(profileData);
           
           set({
             user: { ...get().user, ...response.data },
@@ -136,7 +133,7 @@ const useAuthStore = create(
       uploadAvatar: async (file) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await apiClient.uploadAvatar(file);
+          const response = await userAPI.uploadAvatar(file);
           
           set({
             user: { ...get().user, avatar: response.data.url },
@@ -150,34 +147,10 @@ const useAuthStore = create(
         }
       },
 
-      // Initialize auth state on app start
+      // Initialize auth state on app start - DISABLED
       initialize: async () => {
-        const { accessToken, refreshToken } = get();
-        
-        if (accessToken) {
-          apiClient.setAccessToken(accessToken);
-          
-          try {
-            // Verify token by fetching profile
-            const response = await apiClient.getProfile();
-            set({ user: response.data, isAuthenticated: true });
-            socketManager.connect(accessToken);
-          } catch (error) {
-            // Token might be expired, try to refresh
-            if (refreshToken) {
-              try {
-                await get().refreshToken();
-                const profileResponse = await apiClient.getProfile();
-                set({ user: profileResponse.data, isAuthenticated: true });
-                socketManager.connect(get().accessToken);
-              } catch (refreshError) {
-                get().logout();
-              }
-            } else {
-              get().logout();
-            }
-          }
-        }
+        // Temporarily disabled to prevent logout loops
+        console.log('Auth initialize disabled');
       },
     }),
     {

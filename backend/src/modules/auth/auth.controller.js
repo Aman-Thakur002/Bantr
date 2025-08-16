@@ -1,11 +1,7 @@
 import * as authService from './auth.service.js';
 import { success } from '../../utils/response.js';
 
-/**
- * @desc    Register a new user
- * @route   POST /api/v1/auth/register
- * @access  Public
- */
+//------------------<< register user >>---------------------
 export async function register(req, res) {
   const { name, email, phone, password } = req.body;
   
@@ -19,11 +15,7 @@ export async function register(req, res) {
   res.status(201).json(success(result, 'User registered successfully'));
 }
 
-/**
- * @desc    Authenticate a user and get tokens
- * @route   POST /api/v1/auth/login
- * @access  Public
- */
+//------------------<< login user >>---------------------
 export async function login(req, res) {
   const { identifier, password } = req.body;
   
@@ -32,11 +24,7 @@ export async function login(req, res) {
   res.json(success(result, 'Login successful'));
 }
 
-/**
- * @desc    Refresh access token
- * @route   POST /api/v1/auth/refresh
- * @access  Public
- */
+//---------------<< refresh tokens >>---------------------
 export async function refresh(req, res) {
   const { refreshToken } = req.body;
   
@@ -45,22 +33,14 @@ export async function refresh(req, res) {
   res.json(success(result, 'Tokens refreshed'));
 }
 
-/**
- * @desc    Logout user
- * @route   POST /api/v1/auth/logout
- * @access  Private
- */
+//------------------<< logout user >>---------------------
 export async function logout(req, res) {
   await authService.logout(req.user._id);
 
   res.json(success(null, 'Logout successful'));
 }
 
-/**
- * @desc    Change user password
- * @route   POST /api/v1/auth/password/change
- * @access  Private
- */
+//------------------<< change password >>---------------------
 export async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body;
   
@@ -72,22 +52,14 @@ export async function changePassword(req, res) {
   res.json(success(null, 'Password changed successfully'));
 }
 
-/**
- * @desc    Forgot password
- * @route   POST /api/v1/auth/password/forgot
- * @access  Public
- */
+//------------------<< forgot password >>---------------------
 export async function forgotPassword(req, res) {
   const { identifier } = req.body;
   await authService.forgotPassword(identifier);
   res.json(success(null, 'If a user with that identifier exists, a password reset token has been created.'));
 }
 
-/**
- * @desc    Reset password
- * @route   POST /api/v1/auth/password/reset
- * @access  Public
- */
+//------------------<< reset password >>---------------------
 export async function resetPassword(req, res) {
   const { token, newPassword } = req.body;
   await authService.resetPassword({ token, newPassword });

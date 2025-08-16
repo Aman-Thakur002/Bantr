@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, RotateCcw, Trophy, Users } from 'lucide-react';
-import { apiClient } from '../../lib/api';
+import * as apiClient  from '../../lib/api';
 import useUIStore from '../../stores/useUIStore';
 import useAuthStore from '../../stores/useAuthStore';
 import GlassCard from '../ui/GlassCard';

@@ -1,7 +1,6 @@
 import helmet from 'helmet';
 import cors from 'cors';
 import xss from 'xss';
-import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import { config } from '../config/env.js';
 
@@ -21,7 +20,7 @@ export function setupSecurity(app) {
 
   // CORS configuration
   app.use(cors({
-    origin: config.CLIENT_ORIGIN,
+    origin: config.clientUrl || '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -39,8 +38,7 @@ export function setupSecurity(app) {
     next();
   });
 
-  // Prevent NoSQL injection attacks
-  app.use(mongoSanitize());
+
 
   // Prevent HTTP Parameter Pollution
   app.use(hpp());

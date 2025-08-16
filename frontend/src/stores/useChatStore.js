@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { apiClient } from '../lib/api';
-import { socketManager } from '../lib/socket';
+import { conversationAPI, messageAPI } from '../lib/api';
+import { emitEvent, onEvent, offEvent } from '../lib/socket';
 
 const useChatStore = create((set, get) => ({
   // State
@@ -21,7 +21,7 @@ const useChatStore = create((set, get) => ({
   fetchConversations: async () => {
     try {
       set({ isLoading: true, error: null });
-      const response = await apiClient.getConversations();
+      const response = await conversationAPI.getConversations();
       set({ conversations: response.data, isLoading: false });
     } catch (error) {
       set({ error: error.message, isLoading: false });
@@ -30,7 +30,7 @@ const useChatStore = create((set, get) => ({
 
   createConversation: async (data) => {
     try {
-      const response = await apiClient.createConversation(data);
+      const response = await conversationAPI.createConversation(data);
       const newConversation = response.data;
       
       set(state => ({
@@ -49,13 +49,13 @@ const useChatStore = create((set, get) => ({
     
     // Join conversation room for real-time updates
     if (conversationId) {
-      socketManager.emit('join-conversation', { conversationId });
+      emitEvent('join-conversation', { conversationId });
     }
   },
 
   updateConversation: async (conversationId, data) => {
     try {
-      const response = await apiClient.updateConversation(conversationId, data);
+      const response = await conversationAPI.updateConversation(conversationId, data);
       
       set(state => ({
         conversations: state.conversations.map(conv =>
@@ -72,7 +72,7 @@ const useChatStore = create((set, get) => ({
 
   deleteConversation: async (conversationId) => {
     try {
-      await apiClient.deleteConversation(conversationId);
+      await conversationAPI.deleteConversation(conversationId);
       
       set(state => ({
         conversations: state.conversations.filter(conv => conv._id !== conversationId),
@@ -89,7 +89,7 @@ const useChatStore = create((set, get) => ({
   fetchMessages: async (conversationId, page = 1) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await apiClient.getMessages(conversationId, page);
+      const response = await messageAPI.getMessages(conversationId, page);
       
       set(state => ({
         messages: {
@@ -109,7 +109,7 @@ const useChatStore = create((set, get) => ({
 
   sendMessage: async (messageData) => {
     try {
-      const response = await apiClient.sendMessage(messageData);
+      const response = await messageAPI.sendMessage(messageData);
       const newMessage = response.data;
       
       set(state => ({
@@ -123,7 +123,7 @@ const useChatStore = create((set, get) => ({
       }));
 
       // Emit to socket for real-time
-      socketManager.emit('send-message', newMessage);
+      emitEvent('send-message', newMessage);
       
       return newMessage;
     } catch (error) {
@@ -134,7 +134,7 @@ const useChatStore = create((set, get) => ({
 
   updateMessage: async (messageId, content) => {
     try {
-      const response = await apiClient.updateMessage(messageId, content);
+      const response = await messageAPI.updateMessage(messageId, content);
       const updatedMessage = response.data;
       
       set(state => ({
@@ -155,7 +155,7 @@ const useChatStore = create((set, get) => ({
 
   deleteMessage: async (messageId) => {
     try {
-      await apiClient.deleteMessage(messageId);
+      await messageAPI.deleteMessage(messageId);
       
       set(state => ({
         messages: Object.keys(state.messages).reduce((acc, convId) => {
@@ -171,7 +171,7 @@ const useChatStore = create((set, get) => ({
 
   reactToMessage: async (messageId, emoji) => {
     try {
-      const response = await apiClient.reactToMessage(messageId, emoji);
+      const response = await messageAPI.reactToMessage(messageId, emoji);
       const updatedMessage = response.data;
       
       set(state => ({
@@ -235,31 +235,31 @@ const useChatStore = create((set, get) => ({
   },
 
   startTyping: (conversationId) => {
-    socketManager.emit('typing-start', { conversationId });
+    emitEvent('typing-start', { conversationId });
   },
 
   stopTyping: (conversationId) => {
-    socketManager.emit('typing-stop', { conversationId });
+    emitEvent('typing-stop', { conversationId });
   },
 
   // Initialize socket listeners
   initializeSocket: () => {
-    socketManager.on('message-received', get().handleNewMessage);
-    socketManager.on('message-updated', get().handleMessageUpdate);
-    socketManager.on('message-deleted', get().handleMessageDelete);
-    socketManager.on('users-online', get().setOnlineUsers);
-    socketManager.on('typing-users', ({ conversationId, users }) => {
+    onEvent('message-received', get().handleNewMessage);
+    onEvent('message-updated', get().handleMessageUpdate);
+    onEvent('message-deleted', get().handleMessageDelete);
+    onEvent('users-online', get().setOnlineUsers);
+    onEvent('typing-users', ({ conversationId, users }) => {
       get().setTypingUsers(conversationId, users);
     });
   },
 
   // Cleanup
   cleanup: () => {
-    socketManager.off('message-received');
-    socketManager.off('message-updated');
-    socketManager.off('message-deleted');
-    socketManager.off('users-online');
-    socketManager.off('typing-users');
+    offEvent('message-received');
+    offEvent('message-updated');
+    offEvent('message-deleted');
+    offEvent('users-online');
+    offEvent('typing-users');
   },
 }));
 

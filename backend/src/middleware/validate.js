@@ -1,26 +1,24 @@
-import { z } from 'zod';
-import { AppError } from './errors.js';
-
-export function validate(schema) {
+export function validate(schema, property = 'body') {
   return (req, res, next) => {
     try {
-      const validated = schema.parse({
-        body: req.body,
-        query: req.query,
-        params: req.params,
-      });
+      const { error, value } = schema.validate(req[property], { abortEarly: false });
 
-      req.body = validated.body || req.body;
-      req.query = validated.query || req.query;
-      req.params = validated.params || req.params;
-
-      next();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const message = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
-        throw new AppError(message, 400, 'VALIDATION_ERROR');
+      if (error) {
+        const errors = error.details.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors,
+        });
       }
-      throw error;
+
+      req[property] = value; // assign sanitized data
+      next();
+    } catch (err) {
+      next(err);
     }
   };
 }

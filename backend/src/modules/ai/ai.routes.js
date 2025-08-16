@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { z } from 'zod';
+import Joi from 'joi';
 import { suggestReplyController, summarizeConversationController, translateTextController, moderateTextController } from './ai.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { authenticate } from '../../middleware/auth.js';
@@ -8,30 +8,30 @@ import { requirePermission } from '../../middleware/rbac.js';
 const router = Router();
 
 // Validation schemas
-const suggestReplySchema = z.object({
-  body: z.object({
-    conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/),
-    messageCount: z.number().min(1).max(20).optional(),
+const suggestReplySchema = Joi.object({
+  body: Joi.object({
+    conversationId: Joi.string().regex(/^[0-9a-fA-F]{24}$/),
+    messageCount: Joi.number().min(1).max(20).optional(),
   }),
 });
 
-const summarizeSchema = z.object({
-  body: z.object({
-    conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/),
-    messageCount: z.number().min(1).max(100).optional(),
+const summarizeSchema = Joi.object({
+  body: Joi.object({
+    conversationId: Joi.string().regex(/^[0-9a-fA-F]{24}$/),
+    messageCount: Joi.number().min(1).max(100).optional(),
   }),
 });
 
-const translateSchema = z.object({
-  body: z.object({
-    text: z.string().min(1).max(4000),
-    targetLang: z.string().min(2).max(10),
+const translateSchema = Joi.object({
+  body: Joi.object({
+    text: Joi.string().min(1).max(4000),
+    targetLang: Joi.string().min(2).max(10),
   }),
 });
 
-const moderateSchema = z.object({
-  body: z.object({
-    text: z.string().min(1).max(4000),
+const moderateSchema = Joi.object({
+  body: Joi.object({
+    text: Joi.string().min(1).max(4000),
   }),
 });
 

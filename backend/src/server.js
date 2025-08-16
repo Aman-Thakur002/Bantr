@@ -13,7 +13,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO with CORS configuration
 const io = new Server(server, {
   cors: {
-    origin: config.clientUrl,
+    origin: config.clientUrl || '*',
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH']
   }
 });
@@ -40,11 +40,11 @@ const startServer = async () => {
   try {
     // Establish connection to MongoDB
     await mongoose.connect(config.mongoUri);
-    logger.info('Successfully connected to MongoDB');
+    console.log('Successfully connected to MongoDB');
 
     // Start listening for incoming requests
     server.listen(config.port, () => {
-      logger.info(`Server running on port ${config.port}`);
+      console.log(`Server running on port ${config.port}`);
     });
   } catch (error) {
     logger.error('Failed to connect to MongoDB or start server:', error);

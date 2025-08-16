@@ -3,18 +3,11 @@ import User from '../users/user.model.js';
 import { hashPassword, comparePassword } from '../../utils/passwords.js';
 import { generateTokens, verifyRefreshToken } from '../../utils/tokens.js';
 import { AppError } from '../../middleware/errors.js';
+import { sendPasswordReset } from '../../services/email/index.js';
 
-/**
- * Registers a new user.
- * @param {object} userData - The user data.
- * @param {string} userData.name - The user's name.
- * @param {string} [userData.email] - The user's email (optional).
- * @param {string} userData.phone - The user's phone number.
- * @param {string} userData.password - The user's password.
- * @returns {Promise<object>} The new user and authentication tokens.
- */
+//--------------------<< register user >>---------------------
 export async function register({ name, email, phone, password }) {
-  // Check if user already exists with the same email or phone number
+  
   const existingUser = await User.findOne({
     $or: [
       { email: email || null }, // Use null to avoid matching empty strings
@@ -26,10 +19,8 @@ export async function register({ name, email, phone, password }) {
     throw new AppError('User with this email or phone already exists', 409, 'USER_EXISTS');
   }
 
-  // Hash password for security
   const passwordHash = await hashPassword(password);
 
-  // Create the new user in the database
   const user = await User.create({
     name,
     email,
@@ -37,8 +28,7 @@ export async function register({ name, email, phone, password }) {
     passwordHash,
   });
 
-  // Generate tokens
-  const tokens = generateTokens({ userId: user._id });
+  const tokens = generateTokens({ userId: user._id, tokenVersion: user.refreshTokenVersion });
 
   return {
     user,
@@ -46,13 +36,7 @@ export async function register({ name, email, phone, password }) {
   };
 }
 
-/**
- * Logs a user in.
- * @param {object} credentials - The user's login credentials.
- * @param {string} credentials.identifier - The user's email or phone number.
- * @param {string} credentials.password - The user's password.
- * @returns {Promise<object>} The user and authentication tokens.
- */
+//--------------<< login user >>---------------------
 export async function login({ identifier, password }) {
   // Find user by email or phone number
   const user = await User.findOne({
@@ -63,7 +47,7 @@ export async function login({ identifier, password }) {
   });
 
   if (!user) {
-    throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid credentials', 404, 'INVALID_CREDENTIALS');
   }
 
   // Compare the provided password with the stored hash
@@ -89,11 +73,7 @@ export async function login({ identifier, password }) {
   };
 }
 
-/**
- * Refreshes authentication tokens.
- * @param {string} refreshToken - The refresh token.
- * @returns {Promise<object>} The user and new authentication tokens.
- */
+//---------------<< refresh tokens >>---------------------
 export async function refresh(refreshToken) {
   try {
     // Verify the refresh token's validity
@@ -120,10 +100,7 @@ export async function refresh(refreshToken) {
   }
 }
 
-/**
- * Logs a user out by invalidating their refresh tokens.
- * @param {string} userId - The ID of the user to log out.
- */
+//----------------<< logout user >>---------------------
 export async function logout(userId) {
   // Invalidate all refresh tokens by incrementing the token version
   // and update the user's status to offline.
@@ -134,13 +111,7 @@ export async function logout(userId) {
   });
 }
 
-/**
- * Changes a user's password.
- * @param {string} userId - The ID of the user.
- * @param {object} passwords - The current and new passwords.
- * @param {string} passwords.currentPassword - The user's current password.
- * @param {string} passwords.newPassword - The user's new password.
- */
+//------------------<< change password >>---------------------
 export async function changePassword(userId, { currentPassword, newPassword }) {
   const user = await User.findById(userId);
   if (!user) {
@@ -163,11 +134,7 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
   });
 }
 
-/**
- * Initiates the password reset process for a user.
- * @param {string} identifier - The user's email or phone number.
- * @returns {Promise<string|undefined>} The reset token (for testing/logging) or undefined if user not found.
- */
+//--------------<< forgot password >>---------------------
 export async function forgotPassword(identifier) {
   const user = await User.findOne({
     $or: [{ email: identifier }, { phone: identifier }],
@@ -192,19 +159,15 @@ export async function forgotPassword(identifier) {
 
   await user.save();
 
-  // In a real application, this token would be sent to the user via email or SMS.
-  // For this project, we log it to the console for development purposes.
-  console.log(`Password reset token for ${user.name}: ${resetToken}`);
+  // Send password reset email
+  if (user.email) {
+    await sendPasswordReset(user.email, resetToken);
+  }
 
   return resetToken;
 }
 
-/**
- * Resets a user's password using a reset token.
- * @param {object} data - The reset data.
- * @param {string} data.token - The password reset token.
- * @param {string} data.newPassword - The new password.
- */
+//------------------<< reset password >>---------------------
 export async function resetPassword({ token, newPassword }) {
   // Hash the incoming token to match the one stored in the database
   const hashedToken = crypto

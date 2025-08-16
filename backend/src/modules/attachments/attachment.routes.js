@@ -1,11 +1,14 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import multer from 'multer';
 import * as attachmentController from './attachment.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { authenticate } from '../../middleware/auth.js';
 import { uploadLimiter } from '../../middleware/rateLimiter.js';
 import { config } from '../../config/env.js';
+import {
+  attachmentIdSchema,
+  getUserAttachmentsSchema,
+} from './attachment.validation.js';
 
 const router = Router();
 
@@ -16,7 +19,6 @@ const upload = multer({
     fileSize: config.maxFileSize,
   },
   fileFilter: (req, file, cb) => {
-    // Allow common file types
     const allowedMimes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
       'video/mp4', 'video/webm', 'video/quicktime',
@@ -33,21 +35,6 @@ const upload = multer({
   },
 });
 
-// Validation schemas
-const attachmentIdSchema = z.object({
-  params: z.object({
-    id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid attachment ID'),
-  }),
-});
-
-const listSchema = z.object({
-  query: z.object({
-    kind: z.enum(['image', 'video', 'audio', 'file']).optional(),
-    limit: z.string().transform(Number).optional(),
-    cursor: z.string().optional(),
-  }),
-});
-
 // All routes require authentication
 router.use(authenticate);
 
@@ -55,7 +42,7 @@ router.use(authenticate);
 router.post('/upload', uploadLimiter, upload.single('file'), attachmentController.uploadFile);
 
 // File management
-router.get('/me', validate(listSchema), attachmentController.getUserAttachments);
+router.get('/me', validate(getUserAttachmentsSchema), attachmentController.getUserAttachments);
 router.get('/:id', validate(attachmentIdSchema), attachmentController.getAttachment);
 router.get('/:id/download', validate(attachmentIdSchema), attachmentController.downloadFile);
 router.delete('/:id', validate(attachmentIdSchema), attachmentController.deleteAttachment);

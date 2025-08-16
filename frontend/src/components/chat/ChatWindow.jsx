@@ -24,7 +24,7 @@ import Avatar from '../ui/Avatar';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { cn } from '../../lib/utils';
-import { apiClient } from '../../lib/api';
+import * as apiClient  from '../../lib/api';
 
 const ChatWindow = () => {
   const {

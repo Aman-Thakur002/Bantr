@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Search, Users, MoreHorizontal, MessageCircle, Phone, Video } from 'lucide-react';
-import { apiClient } from '../../lib/api';
+import * as  apiClient  from '../../lib/api';
 import useUIStore from '../../stores/useUIStore';
 import GlassCard from '../ui/GlassCard';
 import Button from '../ui/Button';

@@ -9,13 +9,11 @@ import Input from '../ui/Input';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    username: '',
+    phone: '',
     password: '',
     confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -28,16 +26,19 @@ const RegisterForm = () => {
     const newErrors = {};
 
     // Required fields
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.username) newErrors.username = 'Username is required';
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.phone) newErrors.phone = 'Phone number is required';
     if (!formData.password) newErrors.password = 'Password is required';
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
-    if (!formData.firstName) newErrors.firstName = 'First name is required';
-    if (!formData.lastName) newErrors.lastName = 'Last name is required';
 
-    // Email validation
+    // Email validation (optional)
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
+    }
+
+    // Phone validation
+    if (formData.phone && formData.phone.length < 10) {
+      newErrors.phone = 'Phone number must be at least 10 digits';
     }
 
     // Password validation
@@ -48,11 +49,6 @@ const RegisterForm = () => {
     // Confirm password validation
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    // Username validation
-    if (formData.username && formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
     }
 
     return newErrors;
@@ -111,34 +107,23 @@ const RegisterForm = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           Create your account to start chatting
         </p>
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          Phone number is required • Email is optional
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={formData.firstName}
-              onChange={handleChange}
-              error={errors.firstName}
-              className="pl-10"
-            />
-          </div>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={formData.lastName}
-              onChange={handleChange}
-              error={errors.lastName}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            value={formData.name}
+            onChange={handleChange}
+            error={errors.name}
+            className="pl-10"
+          />
         </div>
 
         <div className="relative">
@@ -146,23 +131,10 @@ const RegisterForm = () => {
           <Input
             type="email"
             name="email"
-            placeholder="Email address"
+            placeholder="Email address (optional)"
             value={formData.email}
             onChange={handleChange}
             error={errors.email}
-            className="pl-10"
-          />
-        </div>
-
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="text"
-            name="username"
-            placeholder="Username"
-            value={formData.username}
-            onChange={handleChange}
-            error={errors.username}
             className="pl-10"
           />
         </div>
@@ -172,9 +144,10 @@ const RegisterForm = () => {
           <Input
             type="tel"
             name="phone"
-            placeholder="Phone number (optional)"
+            placeholder="Phone number"
             value={formData.phone}
             onChange={handleChange}
+            error={errors.phone}
             className="pl-10"
           />
         </div>

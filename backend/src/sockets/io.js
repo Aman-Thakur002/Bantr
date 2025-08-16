@@ -6,12 +6,11 @@ import { config } from '../config/env.js';
 
 // Rate limiting for socket events
 const rateLimits = new Map();
-
 export function initializeSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: config.CLIENT_ORIGIN,
-      methods: ['GET', 'POST'],
+      origin: config.clientUrl || '*', 
+      methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
       credentials: true,
     },
     pingTimeout: 60000,

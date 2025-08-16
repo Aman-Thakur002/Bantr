@@ -9,6 +9,7 @@ import messageRoutes from './modules/messages/message.routes.js';
 import attachmentRoutes from './modules/attachments/attachment.routes.js';
 import callRoutes from './modules/calls/call.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
+import gameRoutes from './modules/games/games.routes.js';
 
 const router = Router();
 
@@ -59,5 +60,6 @@ router.use('/messages', messageRoutes);
 router.use('/attachments', attachmentRoutes);
 router.use('/calls', callRoutes);
 router.use('/ai', aiRoutes);
+router.use('/games', gameRoutes);
 
 export default router;

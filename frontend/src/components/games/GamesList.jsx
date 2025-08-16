@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Gamepad2, Trophy, Users, Play, Plus } from 'lucide-react';
-import { apiClient } from '../../lib/api';
+import * as apiClient from '../../lib/api';
 import useUIStore from '../../stores/useUIStore';
 import useChatStore from '../../stores/useChatStore';
 import GlassCard from '../ui/GlassCard';

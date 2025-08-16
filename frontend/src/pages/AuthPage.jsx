@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuthStore from '../stores/useAuthStore';
 import useThemeStore from '../stores/useThemeStore';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
 import Button from '../components/ui/Button';
 import { Sun, Moon } from 'lucide-react';
 
@@ -12,10 +13,18 @@ const AuthPage = () => {
   const { type } = useParams();
   const { isAuthenticated } = useAuthStore();
   const { mode, toggleMode } = useThemeStore();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   if (isAuthenticated) {
     return <Navigate to="/chat" replace />;
   }
+
+  const renderForm = () => {
+    if (showForgotPassword) {
+      return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+    }
+    return type === 'register' ? <RegisterForm /> : <LoginForm onForgotPassword={() => setShowForgotPassword(true)} />;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 flex items-center justify-center p-4 relative">
@@ -48,7 +57,7 @@ const AuthPage = () => {
         transition={{ duration: 0.5 }}
         className="relative z-10"
       >
-        {type === 'register' ? <RegisterForm /> : <LoginForm />}
+        {renderForm()}
       </motion.div>
     </div>
   );

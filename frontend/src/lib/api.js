@@ -1,381 +1,397 @@
-const API_BASE = 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-class ApiClient {
-  constructor() {
-    this.accessToken = null;
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL environment variable is required');
+}
+
+// Token management
+let accessToken = localStorage.getItem('accessToken');
+let refreshToken = localStorage.getItem('refreshToken');
+
+export const setTokens = (access, refresh) => {
+  accessToken = access;
+  refreshToken = refresh;
+  if (access) localStorage.setItem('accessToken', access);
+  if (refresh) localStorage.setItem('refreshToken', refresh);
+};
+
+export const clearTokens = () => {
+  accessToken = null;
+  refreshToken = null;
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+};
+
+export const getAccessToken = () => accessToken;
+
+// HTTP request helper
+const request = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  };
+  
+  console.log('Making request to:', url);
+  console.log('Request config:', config);
+
+  // Add auth header if token exists
+  if (accessToken && !options.skipAuth) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  setAccessToken(token) {
-    this.accessToken = token;
-  }
-
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.accessToken && {
-          Authorization: `Bearer ${this.accessToken}`,
-        }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
+  try {
     const response = await fetch(url, config);
+    
+    // Handle token refresh on 401 - DISABLED
+    // if (response.status === 401 && refreshToken && !options.skipRefresh) {
+    //   const refreshed = await refreshAccessToken();
+    //   if (refreshed) {
+    //     config.headers.Authorization = `Bearer ${accessToken}`;
+    //     return fetch(url, config);
+    //   } else {
+    //     clearTokens();
+    //     throw new Error('Session expired');
+    //   }
+    // }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        message: 'Network error',
-      }));
-      throw new Error(error.message || 'API request failed');
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
     }
 
     return response.json();
+  } catch (error) {
+    console.error('API Request failed:', error);
+    throw error;
   }
+};
 
-  // Authentication
-  async register(data) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async login(email, password) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  async logout() {
-    return this.request('/auth/logout', { method: 'POST' });
-  }
-
-  async refreshToken(refreshToken) {
-    return this.request('/auth/refresh', {
+// Token refresh
+const refreshAccessToken = async () => {
+  if (!refreshToken) return false;
+  
+  try {
+    const response = await request('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
+      skipAuth: true,
+      skipRefresh: true,
     });
+    
+    if (response.data?.tokens?.accessToken) {
+      setTokens(response.data.tokens.accessToken, refreshToken);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
+};
 
-  async resetPassword(email) {
-    return this.request('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
+// Auth API
+export const authAPI = {
+  register: (userData) => request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+    skipAuth: true,
+  }),
 
-  async sendMagicLink(email) {
-    return this.request('/auth/magic-link', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
+  login: (identifier, password) => request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ identifier, password }),
+    skipAuth: true,
+  }),
 
-  async sendOTP(email, type) {
-    return this.request('/auth/otp/send', {
-      method: 'POST',
-      body: JSON.stringify({ email, type }),
-    });
-  }
+  logout: () => request('/auth/logout', { method: 'POST' }),
 
-  async verifyOTP(email, otp, type) {
-    return this.request('/auth/otp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ email, otp, type }),
-    });
-  }
+  changePassword: (currentPassword, newPassword) => request('/auth/password/change', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  }),
 
-  // Users
-  async getProfile() {
-    return this.request('/users/profile');
-  }
+  forgotPassword: (identifier) => request('/auth/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify({ identifier }),
+    skipAuth: true,
+  }),
 
-  async updateProfile(data) {
-    return this.request('/users/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
+  resetPassword: (token, newPassword) => request('/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+    skipAuth: true,
+  }),
 
-  async uploadAvatar(file) {
+  refreshToken: (token) => request('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: token }),
+    skipAuth: true,
+    skipRefresh: true,
+  }),
+};
+
+// User API
+export const userAPI = {
+  getProfile: () => request('/users/profile'),
+  
+  updateProfile: (data) => request('/users/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+
+  uploadAvatar: (file) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    return this.request('/users/avatar', {
+    return request('/users/avatar', {
       method: 'POST',
       body: formData,
       headers: {},
     });
-  }
+  },
 
-  async searchUsers(query, page = 1, limit = 10) {
-    return this.request(`/users/search?q=${query}&page=${page}&limit=${limit}`);
-  }
+  searchUsers: (query, page = 1, limit = 10) => 
+    request(`/users/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
 
-  async getUserById(userId) {
-    return this.request(`/users/${userId}`);
-  }
+  getUserById: (userId) => request(`/users/${userId}`),
 
-  async getContacts(page = 1, limit = 20) {
-    return this.request(`/users/contacts?page=${page}&limit=${limit}`);
-  }
+  getContacts: (page = 1, limit = 20) => 
+    request(`/users/contacts?page=${page}&limit=${limit}`),
 
-  async addContact(userId, nickname) {
-    return this.request('/users/contacts', {
-      method: 'POST',
-      body: JSON.stringify({ userId, nickname }),
-    });
-  }
+  addContact: (userId, nickname) => request('/users/contacts', {
+    method: 'POST',
+    body: JSON.stringify({ userId, nickname }),
+  }),
 
-  async updateContact(userId, nickname) {
-    return this.request(`/users/contacts/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ nickname }),
-    });
-  }
+  updateContact: (userId, nickname) => request(`/users/contacts/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ nickname }),
+  }),
 
-  async deleteContact(userId) {
-    return this.request(`/users/contacts/${userId}`, { method: 'DELETE' });
-  }
+  deleteContact: (userId) => request(`/users/contacts/${userId}`, {
+    method: 'DELETE',
+  }),
 
-  async blockContact(userId) {
-    return this.request(`/users/contacts/${userId}/block`, { method: 'PUT' });
-  }
+  blockContact: (userId) => request(`/users/contacts/${userId}/block`, {
+    method: 'PUT',
+  }),
 
-  async unblockContact(userId) {
-    return this.request(`/users/contacts/${userId}/unblock`, { method: 'PUT' });
-  }
+  unblockContact: (userId) => request(`/users/contacts/${userId}/unblock`, {
+    method: 'PUT',
+  }),
+};
 
-  // Conversations
-  async getConversations(page = 1, limit = 20, type) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(type && { type }),
-    });
-    return this.request(`/conversations?${params}`);
-  }
+// Conversation API
+export const conversationAPI = {
+  getConversations: (page = 1, limit = 20, type) => {
+    const params = new URLSearchParams({ page, limit });
+    if (type) params.append('type', type);
+    return request(`/conversations?${params}`);
+  },
 
-  async createConversation(data) {
-    return this.request('/conversations', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+  getConversation: (id) => request(`/conversations/${id}`),
 
-  async getConversation(id) {
-    return this.request(`/conversations/${id}`);
-  }
+  createConversation: (data) => request('/conversations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 
-  async updateConversation(id, data) {
-    return this.request(`/conversations/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
+  updateConversation: (id, data) => request(`/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
 
-  async addParticipant(conversationId, userId) {
-    return this.request(`/conversations/${conversationId}/participants`, {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
-  }
+  deleteConversation: (id) => request(`/conversations/${id}`, {
+    method: 'DELETE',
+  }),
 
-  async removeParticipant(conversationId, userId) {
-    return this.request(`/conversations/${conversationId}/participants/${userId}`, {
-      method: 'DELETE',
-    });
-  }
+  addParticipant: (id, userId) => request(`/conversations/${id}/participants`, {
+    method: 'POST',
+    body: JSON.stringify({ userId }),
+  }),
 
-  async leaveConversation(conversationId) {
-    return this.request(`/conversations/${conversationId}/leave`, {
-      method: 'POST',
-    });
-  }
+  removeParticipant: (id, userId) => request(`/conversations/${id}/participants/${userId}`, {
+    method: 'DELETE',
+  }),
 
-  async deleteConversation(conversationId) {
-    return this.request(`/conversations/${conversationId}`, {
-      method: 'DELETE',
-    });
-  }
+  leaveConversation: (id) => request(`/conversations/${id}/leave`, {
+    method: 'POST',
+  }),
+};
 
-  // Messages
-  async getMessages(conversationId, page = 1, limit = 50) {
-    return this.request(
-      `/messages?conversationId=${conversationId}&page=${page}&limit=${limit}`
-    );
-  }
+// Message API
+export const messageAPI = {
+  getMessages: (conversationId, page = 1, limit = 50) => 
+    request(`/messages?conversationId=${conversationId}&page=${page}&limit=${limit}`),
 
-  async sendMessage(data) {
-    return this.request('/messages', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+  getMessage: (id) => request(`/messages/${id}`),
 
-  async updateMessage(id, content) {
-    return this.request(`/messages/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ content }),
-    });
-  }
+  sendMessage: (data) => request('/messages', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 
-  async deleteMessage(id) {
-    return this.request(`/messages/${id}`, { method: 'DELETE' });
-  }
+  updateMessage: (id, content) => request(`/messages/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  }),
 
-  async markAsRead(id) {
-    return this.request(`/messages/${id}/read`, { method: 'PUT' });
-  }
+  deleteMessage: (id) => request(`/messages/${id}`, {
+    method: 'DELETE',
+  }),
 
-  async reactToMessage(id, emoji) {
-    return this.request(`/messages/${id}/react`, {
-      method: 'POST',
-      body: JSON.stringify({ emoji }),
-    });
-  }
+  markAsRead: (id) => request(`/messages/${id}/read`, {
+    method: 'PUT',
+  }),
 
-  async searchMessages(query, conversationId, page = 1, limit = 20) {
-    return this.request(
-      `/messages/search?q=${query}&conversationId=${conversationId}&page=${page}&limit=${limit}`
-    );
-  }
+  reactToMessage: (id, emoji) => request(`/messages/${id}/react`, {
+    method: 'POST',
+    body: JSON.stringify({ emoji }),
+  }),
 
-  // Attachments
-  async uploadFile(file, type) {
+  searchMessages: (query, conversationId, page = 1, limit = 20) => {
+    const params = new URLSearchParams({ q: query, page, limit });
+    if (conversationId) params.append('conversationId', conversationId);
+    return request(`/messages/search?${params}`);
+  },
+};
+
+// Attachment API
+export const attachmentAPI = {
+  upload: (file, type) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
-    return this.request('/attachments/upload', {
+    return request('/attachments/upload', {
       method: 'POST',
       body: formData,
       headers: {},
     });
-  }
+  },
 
-  async getAttachment(id) {
-    return this.request(`/attachments/${id}`);
-  }
+  getAttachment: (id) => request(`/attachments/${id}`),
 
-  async deleteAttachment(id) {
-    return this.request(`/attachments/${id}`, { method: 'DELETE' });
-  }
+  deleteAttachment: (id) => request(`/attachments/${id}`, {
+    method: 'DELETE',
+  }),
 
-  async getUserAttachments(type, page = 1, limit = 20) {
-    return this.request(`/attachments?type=${type}&page=${page}&limit=${limit}`);
-  }
+  getUserAttachments: (type, page = 1, limit = 20) => {
+    const params = new URLSearchParams({ page, limit });
+    if (type) params.append('type', type);
+    return request(`/attachments?${params}`);
+  },
+};
 
-  // Calls
-  async initiateCall(data) {
-    return this.request('/calls', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+// Call API
+export const callAPI = {
+  initiateCall: (data) => request('/calls', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 
-  async getCall(callId) {
-    return this.request(`/calls/${callId}`);
-  }
+  getCall: (id) => request(`/calls/${id}`),
 
-  async joinCall(callId) {
-    return this.request(`/calls/${callId}/join`, { method: 'POST' });
-  }
+  joinCall: (id) => request(`/calls/${id}/join`, {
+    method: 'POST',
+  }),
 
-  async endCall(callId) {
-    return this.request(`/calls/${callId}/end`, { method: 'POST' });
-  }
+  endCall: (id) => request(`/calls/${id}/end`, {
+    method: 'POST',
+  }),
 
-  async getCallHistory(page = 1, limit = 20, type) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(type && { type }),
-    });
-    return this.request(`/calls?${params}`);
-  }
+  getCallHistory: (page = 1, limit = 20, type) => {
+    const params = new URLSearchParams({ page, limit });
+    if (type) params.append('type', type);
+    return request(`/calls?${params}`);
+  },
+};
 
-  // AI Features
-  async chatWithAI(message, conversationId, provider = 'openai') {
-    return this.request('/ai/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message, conversationId, provider }),
-    });
-  }
+// AI API
+export const aiAPI = {
+  chat: (message, conversationId, provider = 'openai') => request('/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, conversationId, provider }),
+  }),
 
-  async generateImage(prompt, size = '1024x1024', provider = 'openai') {
-    return this.request('/ai/image/generate', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, size, provider }),
-    });
-  }
+  generateImage: (prompt, size = '1024x1024', provider = 'openai') => request('/ai/image/generate', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, size, provider }),
+  }),
 
-  async analyzeImage(image, prompt = 'What do you see in this image?') {
+  analyzeImage: (image, prompt = 'What do you see in this image?') => {
     const formData = new FormData();
     formData.append('image', image);
     formData.append('prompt', prompt);
-    return this.request('/ai/image/analyze', {
+    return request('/ai/image/analyze', {
       method: 'POST',
       body: formData,
       headers: {},
     });
-  }
+  },
 
-  async translateText(text, from, to) {
-    return this.request('/ai/translate', {
-      method: 'POST',
-      body: JSON.stringify({ text, from, to }),
-    });
-  }
+  translate: (text, from, to) => request('/ai/translate', {
+    method: 'POST',
+    body: JSON.stringify({ text, from, to }),
+  }),
+};
 
-  // Games
-  async startTicTacToe(conversationId, opponent) {
-    return this.request('/games/tictactoe/start', {
-      method: 'POST',
-      body: JSON.stringify({ conversationId, opponent }),
-    });
-  }
+// Game API
+export const gameAPI = {
+  createTicTacToe: (conversationId) => request('/games/tictactoe', {
+    method: 'POST',
+    body: JSON.stringify({ conversationId }),
+  }),
 
-  async makeMove(gameId, position) {
-    return this.request('/games/tictactoe/move', {
-      method: 'POST',
-      body: JSON.stringify({ gameId, position }),
-    });
-  }
+  joinTicTacToe: (gameId) => request(`/games/tictactoe/${gameId}/join`, {
+    method: 'POST',
+  }),
 
-  async getGameState(gameId) {
-    return this.request(`/games/tictactoe/${gameId}`);
-  }
+  makeMove: (gameId, position) => request(`/games/tictactoe/${gameId}/move`, {
+    method: 'POST',
+    body: JSON.stringify({ position }),
+  }),
 
-  // Admin
-  async getAllUsers(page = 1, limit = 20, status, role) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(status && { status }),
-      ...(role && { role }),
-    });
-    return this.request(`/admin/users?${params}`);
-  }
+  resetGame: (gameId) => request(`/games/tictactoe/${gameId}/reset`, {
+    method: 'POST',
+  }),
 
-  async updateUserStatus(userId, status, reason) {
-    return this.request(`/admin/users/${userId}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status, reason }),
-    });
-  }
+  getGame: (gameId) => request(`/games/tictactoe/${gameId}`),
 
-  async updateUserRole(userId, role) {
-    return this.request(`/admin/users/${userId}/role`, {
-      method: 'PUT',
-      body: JSON.stringify({ role }),
-    });
-  }
+  getConversationGames: (conversationId) => request(`/games/tictactoe?conversationId=${conversationId}`),
+};
 
-  async getSystemStats() {
-    return this.request('/admin/stats');
-  }
-}
+// Admin API
+export const adminAPI = {
+  getAllUsers: (page = 1, limit = 20, status, role) => {
+    const params = new URLSearchParams({ page, limit });
+    if (status) params.append('status', status);
+    if (role) params.append('role', role);
+    return request(`/admin/users?${params}`);
+  },
 
-export const apiClient = new ApiClient();
+  updateUserStatus: (userId, status, reason) => request(`/admin/users/${userId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, reason }),
+  }),
+
+  updateUserRole: (userId, role) => request(`/admin/users/${userId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  }),
+
+  getSystemStats: () => request('/admin/stats'),
+};
+
+export default {
+  auth: authAPI,
+  user: userAPI,
+  conversation: conversationAPI,
+  message: messageAPI,
+  attachment: attachmentAPI,
+  call: callAPI,
+  ai: aiAPI,
+  game: gameAPI,
+  admin: adminAPI,
+};

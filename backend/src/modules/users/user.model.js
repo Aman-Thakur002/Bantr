@@ -1,25 +1,5 @@
 import mongoose from 'mongoose';
 
-/**
- * @typedef User
- * @property {string} name.required - User's full name
- * @property {string} email - User's email address (unique, optional)
- * @property {string} phone.required - User's phone number (unique)
- * @property {string} passwordHash.required - Hashed password
- * @property {string} avatarUrl - URL of the user's avatar image
- * @property {string} status - User's online status ('online', 'offline', 'away')
- * @property {string} about - A short bio or status message
- * @property {string} role - User's role ('user', 'moderator', 'admin')
- * @property {Array.<ObjectId>} blockedUsers - List of users blocked by this user
- * @property {object} settings - User-specific settings
- * @property {boolean} settings.readReceipts - If the user sends read receipts
- * @property {boolean} settings.lastSeenVisible - If the user's last seen time is visible
- * @property {string} settings.theme - User's preferred theme ('light', 'dark', 'auto')
- * @property {Date} lastSeenAt - The last time the user was active
- * @property {number} refreshTokenVersion - Incremented to invalidate all refresh tokens
- * @property {string} passwordResetToken - Token for resetting password
- * @property {Date} passwordResetExpires - Expiration date for the password reset token
- */
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -60,7 +40,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'moderator', 'admin'],
+    enum: ['user', 'admin'],
     default: 'user',
   },
   blockedUsers: [{
@@ -91,6 +71,14 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  magicLink: {
+    type: String,
+    default: 0,
+  },
+  otp: {
+    type: String,
+    default: 0,
+  },
   // Hashed token for password reset functionality.
   passwordResetToken: String,
   // Expiration date for the password reset token.
@@ -103,10 +91,7 @@ const userSchema = new mongoose.Schema({
 // Create a text index on the name field for searching.
 userSchema.index({ name: 'text' });
 
-/**
- * Custom toJSON method to control what user data is sent back to the client.
- * This method removes sensitive fields like the password hash and refresh token version.
- */
+
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.passwordHash;
@@ -114,11 +99,6 @@ userSchema.methods.toJSON = function() {
   return user;
 };
 
-/**
- * Checks if a given user ID is in the current user's blocked list.
- * @param {string} userId - The ID of the user to check.
- * @returns {boolean} True if the user is blocked, false otherwise.
- */
 userSchema.methods.isBlocked = function(userId) {
   return this.blockedUsers.includes(userId);
 };

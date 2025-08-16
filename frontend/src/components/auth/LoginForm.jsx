@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../stores/useAuthStore';
+import { authAPI } from '../../lib/api';
 import useUIStore from '../../stores/useUIStore';
 import GlassCard from '../ui/GlassCard';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 
-const LoginForm = () => {
+const LoginForm = ({ onForgotPassword }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +25,7 @@ const LoginForm = () => {
 
     // Basic validation
     const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.identifier) newErrors.identifier = 'Email or phone is required';
     if (!formData.password) newErrors.password = 'Password is required';
 
     if (Object.keys(newErrors).length > 0) {
@@ -33,13 +34,16 @@ const LoginForm = () => {
     }
 
     try {
-      await login(formData.email, formData.password);
+      console.log('Attempting login with:', formData.identifier);
+      const response = await login(formData.identifier, formData.password);
+      console.log('Login response:', response);
       addNotification({
         type: 'success',
         title: 'Welcome back!',
         message: 'You have successfully logged in.',
       });
     } catch (error) {
+      console.error('Login error:', error);
       addNotification({
         type: 'error',
         title: 'Login failed',
@@ -81,12 +85,12 @@ const LoginForm = () => {
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              type="email"
-              name="email"
-              placeholder="Email address"
-              value={formData.email}
+              type="text"
+              name="identifier"
+              placeholder="Email or phone number"
+              value={formData.identifier}
               onChange={handleChange}
-              error={errors.email}
+              error={errors.identifier}
               className="pl-10"
             />
           </div>
@@ -121,12 +125,13 @@ const LoginForm = () => {
               Remember me
             </span>
           </label>
-          <Link
-            to="/auth/reset-password"
+          <button
+            type="button"
+            onClick={onForgotPassword}
             className="text-sm text-primary hover:text-primary/80 transition-colors"
           >
             Forgot password?
-          </Link>
+          </button>
         </div>
 
         <Button
